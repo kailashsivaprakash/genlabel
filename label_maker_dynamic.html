@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Label Maker – Printable / PDF</title>
+<style>
+  :root{
+    --page-width-mm:210; 
+    --page-height-mm:297;
+    --page-margin-top-mm:15;
+    --page-margin-right-mm:15;
+    --page-margin-bottom-mm:15;
+    --page-margin-left-mm:15;
+    --label-gap-mm:3;
+    --label-width-mm:60;
+    --label-height-mm:30;
+  }
+  body{ font-family: system-ui, Arial, sans-serif; margin:18px; color:#111 }
+  h1{ font-size:1.1rem; margin:0 0 12px 0 }
+  .controls{ display:grid; grid-template-columns: 1fr; gap:16px; margin-bottom:12px }
+  .card{ border:1px solid #e2e8f0; padding:12px; border-radius:8px; background:#fff }
+  label{ display:block; font-size:0.85rem; margin-bottom:6px }
+  input, select{ padding:6px; font-size:0.9rem; border-radius:6px; border:1px solid #cbd5e1; box-sizing:border-box }
+  .row{ display:flex; gap:6px; margin-bottom:6px }
+  .row input{ flex:1 }
+  .add-btn{ background:#0ea5a4; color:white; border:none; border-radius:6px; padding:6px 10px; cursor:pointer; font-size:0.9rem }
+  .buttons{ display:flex; gap:8px; margin-top:8px }
+  button{ padding:8px 12px; border-radius:8px; border:0; cursor:pointer; background:#0ea5a4; color:white }
+  button.secondary{ background:#64748b }
+  .preview-wrap{ border:1px dashed #cbd5e1; padding:12px; border-radius:8px; background:#fbfdff; width:100%; overflow:auto; max-height:600px; }
+  .page{ width: calc(var(--page-width-mm)*1mm); height: calc(var(--page-height-mm)*1mm); box-shadow: 0 2px 8px rgba(2,6,23,0.08); background: white; position:relative; box-sizing: border-box; margin-bottom:12px; }
+  .page .content{ position:absolute; left: calc(var(--page-margin-left-mm)*1mm); top: calc(var(--page-margin-top-mm)*1mm); width: calc( (var(--page-width-mm) - var(--page-margin-left-mm) - var(--page-margin-right-mm)) *1mm ); height: calc( (var(--page-height-mm) - var(--page-margin-top-mm) - var(--page-margin-bottom-mm)) *1mm ); display:grid; gap: calc(var(--label-gap-mm)*1mm); align-content:start; justify-items:start; box-sizing:border-box; }
+  .label{ width: calc(var(--label-width-mm)*1mm); height: calc(var(--label-height-mm)*1mm); display:block; text-align:center; line-height: calc(var(--label-height-mm)*1mm); box-sizing:border-box; border:1px solid black; font-size:10pt; color:black; overflow:hidden; }
+  @media print{ body *{ visibility: hidden; } .page, .page *{ visibility: visible; } .page{ position: static; margin:0; box-shadow:none; } .label{ color:black !important; border:1px solid black !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+  <h1>Label Maker – Printable Labels</h1>
+
+  <div class="controls">
+    <div class="card">
+      <label>Ingredients & Quantities</label>
+      <div id="itemsContainer"></div>
+      <button type="button" class="add-btn" id="addRow">+ Add Item</button>
+
+      <div style="margin-top:12px; display:grid; grid-template-columns: 1fr 1fr; gap:8px">
+        <div>
+          <label for="labelWidth">Label width (mm)</label>
+          <input id="labelWidth" type="number" value="60">
+        </div>
+        <div>
+          <label for="labelHeight">Label height (mm)</label>
+          <input id="labelHeight" type="number" value="30">
+        </div>
+      </div>
+
+      <div style="margin-top:8px; display:grid; grid-template-columns: 1fr 1fr; gap:8px">
+        <div>
+          <label for="gap">Gap between labels (mm)</label>
+          <input id="gap" type="number" value="3">
+        </div>
+        <div>
+          <label for="fontSize">Font size (pt)</label>
+          <input id="fontSize" type="number" value="10">
+        </div>
+      </div>
+
+      <div style="margin-top:8px; display:grid; grid-template-columns: 1fr 1fr; gap:8px">
+        <div>
+          <label for="pageSize">Page</label>
+          <select id="pageSize">
+            <option value="A4">A4 (210 × 297 mm)</option>
+            <option value="Letter">Letter (216 × 279 mm)</option>
+          </select>
+        </div>
+        <div>
+          <label for="orientation">Orientation</label>
+          <select id="orientation">
+            <option value="portrait">Portrait</option>
+            <option value="landscape">Landscape</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top:8px; display:grid; grid-template-columns: 1fr 1fr; gap:8px">
+        <div>
+          <label for="marginTop">Margin top (mm)</label>
+          <input id="marginTop" type="number" value="15">
+        </div>
+        <div>
+          <label for="marginRight">Margin right (mm)</label>
+          <input id="marginRight" type="number" value="15">
+        </div>
+      </div>
+
+      <div style="margin-top:8px; display:grid; grid-template-columns: 1fr 1fr; gap:8px">
+        <div>
+          <label for="marginBottom">Margin bottom (mm)</label>
+          <input id="marginBottom" type="number" value="15">
+        </div>
+        <div>
+          <label for="marginLeft">Margin left (mm)</label>
+          <input id="marginLeft" type="number" value="15">
+        </div>
+      </div>
+
+      <div class="buttons">
+        <button id="generate">Generate labels</button>
+        <button id="print" class="secondary" type="button">Print / Save as PDF</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <div class="small-muted">Preview (all pages below)</div>
+      <div id="previewWrap" class="preview-wrap"></div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const els = {
+    itemsContainer: document.getElementById('itemsContainer'),
+    addRow: document.getElementById('addRow'),
+    labelWidth: document.getElementById('labelWidth'),
+    labelHeight: document.getElementById('labelHeight'),
+    gap: document.getElementById('gap'),
+    fontSize: document.getElementById('fontSize'),
+    generate: document.getElementById('generate'),
+    previewWrap: document.getElementById('previewWrap'),
+    pageSize: document.getElementById('pageSize'),
+    orientation: document.getElementById('orientation'),
+    marginTop: document.getElementById('marginTop'),
+    marginRight: document.getElementById('marginRight'),
+    marginBottom: document.getElementById('marginBottom'),
+    marginLeft: document.getElementById('marginLeft'),
+    print: document.getElementById('print')
+  };
+
+  function addRow(name='', qty=''){
+    const row = document.createElement('div');
+    row.className = 'row';
+    const itemInput = document.createElement('input');
+    itemInput.type = 'text';
+    itemInput.placeholder = 'Item';
+    itemInput.value = name;
+    const qtyInput = document.createElement('input');
+    qtyInput.type = 'number';
+    qtyInput.placeholder = 'Qty';
+    qtyInput.value = qty;
+    row.appendChild(itemInput);
+    row.appendChild(qtyInput);
+    els.itemsContainer.appendChild(row);
+  }
+
+  // Correctly attach the addRow button
+  els.addRow.addEventListener('click', function(){ addRow(); });
+
+  function pageDims(size, orientation){
+    if(size === 'Letter') return orientation === 'portrait' ? {w:216, h:279} : {w:279, h:216};
+    return orientation === 'portrait' ? {w:210, h:297} : {w:297, h:210};
+  }
+
+  function getItems(){
+    const rows = els.itemsContainer.querySelectorAll('.row');
+    const out = [];
+    rows.forEach(r=>{
+      const inputs = r.querySelectorAll('input');
+      const label = inputs[0].value.trim();
+      const qty = parseInt(inputs[1].value.trim(),10) || 0;
+      if(label && qty>0) out.push({label, qty});
+    });
+    return out;
+  }
+
+  function generatePages(){
+    const labelW = parseFloat(els.labelWidth.value)||60;
+    const labelH = parseFloat(els.labelHeight.value)||30;
+    const gap = parseFloat(els.gap.value)||3;
+    const fontSize = parseFloat(els.fontSize.value)||10;
+
+    const marginTop = parseFloat(els.marginTop.value)||15;
+    const marginRight = parseFloat(els.marginRight.value)||15;
+    const marginBottom = parseFloat(els.marginBottom.value)||15;
+    const marginLeft = parseFloat(els.marginLeft.value)||15;
+
+    const pageSize = els.pageSize.value;
+    const orientation = els.orientation.value;
+    const dims = pageDims(pageSize, orientation);
+
+    document.documentElement.style.setProperty('--page-width-mm', dims.w);
+    document.documentElement.style.setProperty('--page-height-mm', dims.h);
+    document.documentElement.style.setProperty('--page-margin-top-mm', marginTop);
+    document.documentElement.style.setProperty('--page-margin-right-mm', marginRight);
+    document.documentElement.style.setProperty('--page-margin-bottom-mm', marginBottom);
+    document.documentElement.style.setProperty('--page-margin-left-mm', marginLeft);
+    document.documentElement.style.setProperty('--label-gap-mm', gap);
+    document.documentElement.style.setProperty('--label-width-mm', labelW);
+    document.documentElement.style.setProperty('--label-height-mm', labelH);
+
+    const items = getItems();
+    const flat = [];
+    items.forEach(it=>{ for(let i=0;i<it.qty;i++) flat.push(it.label); });
+
+    const contentW = dims.w - marginLeft - marginRight;
+    const contentH = dims.h - marginTop - marginBottom;
+    const colSpace = labelW + gap;
+    const rowSpace = labelH + gap;
+    const cols = Math.max(1, Math.floor((contentW + gap) / colSpace));
+    const rows = Math.max(1, Math.floor((contentH + gap) / rowSpace));
+    const perPage = cols * rows;
+
+    const pages = [];
+    for(let p=0; p*perPage < flat.length; p++){
+      const slice = flat.slice(p*perPage, (p+1)*perPage);
+      pages.push({labels: slice, cols, rows});
+    }
+    renderPages(pages, fontSize);
+  }
+
+  function renderPages(pages, fontSize){
+    els.previewWrap.innerHTML='';
+    if(pages.length===0){ els.previewWrap.innerHTML='<div style="padding:16px;color:#64748b">No labels — add items and click Generate.</div>'; return; }
+    pages.forEach(pg=>{
+      const page = document.createElement('div');
+      page.className='page';
+      const content = document.createElement('div');
+      content.className='content';
+      content.style.gridTemplateColumns=`repeat(${pg.cols}, auto)`;
+      const total = pg.cols*pg.rows;
+      for(let i=0;i<total;i++){
+        const lab = document.createElement('div');
+        lab.className='label';
+        lab.style.fontSize = fontSize+'pt';
+        lab.innerText = pg.labels[i]||'';
+        content.appendChild(lab);
+      }
+      page.appendChild(content);
+      els.previewWrap.appendChild(page);
+    });
+  }
+
+  els.generate.addEventListener('click', generatePages);
+  els.print.addEventListener('click', ()=>window.print());
+
+  // Prefill sample rows
+  addRow('Mango Pickle', 12);
+  addRow('Tomato Sauce', 6);
+  addRow('Chili Powder', 15);
+})();
+</script>
+</body>
+</html>
